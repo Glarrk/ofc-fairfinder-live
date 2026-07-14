@@ -754,16 +754,22 @@ svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
   window.ocfRedraw=()=>{draw();};
 
   /* ---- path network: the Eight (approx waypoints in grid space) ---- */
-  /* two 16-node rings (the loops of the Eight), two connectors, south spur */
-  function ring(cc,cr,rc,rr,n){const a=[];for(let k=0;k<n;k++){const th=k/n*2*Math.PI;
-    a.push(xy(cc+rc*Math.cos(th),cr+rr*Math.sin(th)));}return a;}
-  const RU=ring(5,4,2.9,2.2,16), RL=ring(5,11,2.9,2.3,16);
-  const GN=[...RU,...RL, xy(5,6.9),xy(5,8.1), xy(6.9,7.5), xy(5,14.15)];
+  /* path network traced from the map artwork (px @1080x1634, scaled to CAL) */
+  const kx=CAL.W/1080, ky=CAL.H/1634, PX=p=>({x:p[0]*kx,y:p[1]*ky});
+  const GN=[
+    /* upper loop 0-17 */
+    [235,306],[426,249],[611,234],[796,263],[888,334],[931,426],[938,540],[910,639],[853,725],[739,789],[611,824],[469,831],[355,796],[270,739],[213,647],[192,540],[199,426],[213,341],
+    /* lower loop 18-33 */
+    [355,952],[540,924],[711,938],[838,988],[910,1073],[931,1201],[917,1329],[853,1428],[739,1499],[597,1542],[441,1535],[327,1485],[249,1400],[220,1272],[235,1130],[284,1016],
+    /* west connector mids 34-35, east connector mids 36-37, south spur 38 */
+    [430,880],[395,930],[722,858],[707,905],[590,1595]
+  ].map(PX);
   const GE=[];
-  for(let k=0;k<16;k++){GE.push([k,(k+1)%16]);GE.push([16+k,16+(k+1)%16]);}
-  GE.push([4,32],[32,33],[33,28]);      /* center connector: bottom of upper ring to top of lower */
-  GE.push([2,34],[34,30]);              /* east connector */
-  GE.push([20,35]);                     /* south spur toward Dance Pavilion */
+  for(let k=0;k<18;k++)GE.push([k,(k+1)%18]);
+  for(let k=0;k<16;k++)GE.push([18+k,18+(k+1)%16]);
+  GE.push([11,34],[34,35],[35,18]);   /* west corridor through the seam */
+  GE.push([9,36],[36,37],[37,20]);    /* east corridor through the seam */
+  GE.push([27,38]);                   /* south spur toward Dance Pavilion */
   const ADJ=GN.map(()=>[]);GE.forEach(([a,b])=>{const w=Math.hypot(GN[a].x-GN[b].x,GN[a].y-GN[b].y);ADJ[a].push([b,w]);ADJ[b].push([a,w]);});
   function nearestNode(p){let bi=0,bd=1e18;GN.forEach((n,i)=>{const d=(n.x-p.x)**2+(n.y-p.y)**2;if(d<bd){bd=d;bi=i;}});return bi;}
   function dijkstra(s,e){const N=GN.length,dist=Array(N).fill(1e18),prev=Array(N).fill(-1),done=Array(N).fill(false);dist[s]=0;
