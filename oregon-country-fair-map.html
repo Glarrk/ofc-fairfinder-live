@@ -779,15 +779,36 @@ svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
     const path=[];let c=e;while(c>=0){path.unshift(c);c=prev[c];}return (path[0]===s)?path:[s];}
   let routePts=[],routeLen=0;
   const D2=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y);
+  function projSeg(p,u,v){const dx=v.x-u.x,dy=v.y-u.y,L=dx*dx+dy*dy||1e-9;
+    let s=((p.x-u.x)*dx+(p.y-u.y)*dy)/L;s=Math.max(0,Math.min(1,s));
+    return {x:u.x+dx*s,y:u.y+dy*s,s};}
+  function nearestEdge(p){let b=null;
+    for(let i=0;i<GE.length;i++){const q=projSeg(p,GN[GE[i][0]],GN[GE[i][1]]),d=(q.x-p.x)**2+(q.y-p.y)**2;
+      if(!b||d<b.d)b={d,u:GE[i][0],v:GE[i][1],q};}return b;}
+  function dijFull(s){const N=GN.length,dist=Array(N).fill(1e18),prev=Array(N).fill(-1),done=Array(N).fill(false);dist[s]=0;
+    for(let k=0;k<N;k++){let u=-1,ud=1e18;for(let i=0;i<N;i++)if(!done[i]&&dist[i]<ud){ud=dist[i];u=i;}
+      if(u<0)break;done[u]=true;ADJ[u].forEach(([v,w])=>{if(dist[u]+w<dist[v]){dist[v]=dist[u]+w;prev[v]=u;}});}
+    return {dist,prev};}
+  function nodePath(prev,e){const p=[];let c=e;while(c>=0){p.unshift(c);c=prev[c];}return p;}
   function buildRoute(a,b){
     const direct=D2(a,b);
-    let pts=[a,...dijkstra(nearestNode(a),nearestNode(b)).map(i=>GN[i]),b];
-    /* trim backtracking: drop graph endpoints that pull the route the wrong way */
-    while(pts.length>2&&D2(a,pts[2])<D2(a,pts[1]))pts.splice(1,1);
-    while(pts.length>2&&D2(b,pts[pts.length-3])<D2(b,pts[pts.length-2]))pts.splice(pts.length-2,1);
-    let len=0;for(let i=1;i<pts.length;i++)len+=D2(pts[i],pts[i-1]);
-    if(direct<60||direct*1.12>len){pts=[a,b];len=direct;}
-    return {pts,len:len*mpp()};}
+    if(direct<70)return {pts:[a,b],len:direct*mpp()};   /* only when practically there */
+    const ea=nearestEdge(a),eb=nearestEdge(b);
+    let pts;
+    if(ea.u===eb.u&&ea.v===eb.v)pts=[a,ea.q,eb.q,b];    /* same corridor segment */
+    else{
+      const F={};F[ea.u]=dijFull(ea.u);if(!F[ea.v])F[ea.v]=(ea.v===ea.u)?F[ea.u]:dijFull(ea.v);
+      let best=null;
+      [ea.u,ea.v].forEach(x=>{[eb.u,eb.v].forEach(y=>{
+        const c=D2(ea.q,GN[x])+F[x].dist[y]+D2(eb.q,GN[y]);
+        if(!best||c<best.c)best={c,x,y};});});
+      pts=[a,ea.q,...nodePath(F[best.x].prev,best.y).map(i=>GN[i]),eb.q,b];
+    }
+    const out=[pts[0]];
+    for(let i=1;i<pts.length;i++)if(D2(pts[i],out[out.length-1])>4)out.push(pts[i]);
+    if(D2(out[out.length-1],b)>1)out.push(b);
+    let len=0;for(let i=1;i<out.length;i++)len+=D2(out[i],out[i-1]);
+    return {pts:out,len:len*mpp()};}
   /* Catmull-Rom -> cubic Bezier for a smooth curve through the waypoints */
   function smoothD(P){
     if(P.length<3)return P.map((p,i)=>(i?'L':'M')+p.x.toFixed(1)+' '+p.y.toFixed(1)).join(' ');
@@ -809,7 +830,7 @@ svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
       <circle cx="${b.x}" cy="${b.y}" r="6" style="fill:var(--accent)" stroke="#fff" stroke-width="2"/>`;}
 
   /* ---- simulation mode ---- */
-  let sim=false,simT=null,simXY=null;
+  let sim=false,simT=null,simXY=null,simWalk=null;
   window.__simOn=false;
   function xy2ll(x,y){const pr=params(),D=pr.A*pr.A+pr.B*pr.B||1e-9;
     const e=(pr.A*(x-pr.cx)+pr.B*(y-pr.cy))/D,n=(pr.B*(x-pr.cx)-pr.A*(y-pr.cy))/D;
@@ -817,13 +838,23 @@ svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
   window.ocfSim=function(on){sim=on;window.__simOn=on;if(simT){clearInterval(simT);simT=null;}
     if(on){if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;}
       $('locBtn').classList.add('live');
-      if(!simXY)simXY={x:CAL.W*0.5,y:CAL.H*0.42};
-      simT=setInterval(()=>{let tgt=null;
-        if(nav&&routePts.length>1)tgt=routePts[1];else if(nav)tgt={x:nav.x,y:nav.y};
-        const sp=1.6/mpp();
-        if(tgt){const dx=tgt.x-simXY.x,dy=tgt.y-simXY.y,dd=Math.hypot(dx,dy)||1;const st=Math.min(sp,dd);simXY.x+=dx/dd*st;simXY.y+=dy/dd*st;}
-        else{simXY.x+=(Math.random()-.5)*sp;simXY.y+=(Math.random()-.5)*sp;}
-        simXY.x=Math.max(20,Math.min(CAL.W-20,simXY.x));simXY.y=Math.max(20,Math.min(CAL.H-20,simXY.y));
+      if(!simXY)simXY={x:GN[10].x,y:GN[10].y};   /* start ON the path */
+      simT=setInterval(()=>{const sp=1.6/mpp();
+        if(nav&&routePts.length>1){
+          /* follow the routed line, point to point */
+          let i=1;while(i<routePts.length-1&&D2(routePts[i],simXY)<3)i++;
+          const tgt=routePts[i],dx=tgt.x-simXY.x,dy=tgt.y-simXY.y,dd=Math.hypot(dx,dy)||1,st=Math.min(sp,dd);
+          simXY.x+=dx/dd*st;simXY.y+=dy/dd*st;simWalk=null;
+        }else{
+          /* idle: stroll the path network edge to edge */
+          if(!simWalk){const e=nearestEdge(simXY);simXY={x:e.q.x,y:e.q.y};simWalk={at:e.u,to:e.v};}
+          const tgt=GN[simWalk.to],dx=tgt.x-simXY.x,dy=tgt.y-simXY.y,dd=Math.hypot(dx,dy);
+          if(dd<=sp){simXY={x:tgt.x,y:tgt.y};
+            const opts=ADJ[simWalk.to].map(x=>x[0]).filter(n=>n!==simWalk.at);
+            const nx=opts.length?opts[Math.floor(Math.random()*opts.length)]:simWalk.at;
+            simWalk={at:simWalk.to,to:nx};}
+          else{simXY.x+=dx/dd*sp;simXY.y+=dy/dd*sp;}
+        }
         const ll=xy2ll(simXY.x,simXY.y);gotPos(ll.lat,ll.lng,6);},700);}
     else{$('locBtn').classList.remove('live');}
     S.set('simmode',on);if(window.ocfSimLabel)window.ocfSimLabel(on);};
