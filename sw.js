@@ -1,5 +1,5 @@
-/* OCF Fair Map service worker - offline cache (stale-while-revalidate) */
-const CACHE = "ocf-cache-202606291744";
+/* OCF Fair Finder service worker - offline cache (stale-while-revalidate) */
+const CACHE = "ocf-cache-202607141230";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil((async () => {
   const keys = await caches.keys();

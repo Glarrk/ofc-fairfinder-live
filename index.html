@@ -370,6 +370,34 @@
   .tabbar button.live{color:var(--accent)}
   .tabbar button.live .ic{text-shadow:0 0 12px var(--glow)}
   .tabbar button:not(.on):active{background:var(--sur2)}
+  /* ===== modern polish ===== */
+  :root{--glass:rgba(250,245,233,.78)}
+  [data-theme="dark"]{--glass:rgba(31,45,36,.78)}
+  [data-theme="psy"]{--glass:rgba(36,18,66,.8)}
+  .tabbar,.zoombar button,.brand,.navbar,.morepop{background:var(--glass);backdrop-filter:blur(16px) saturate(1.25);-webkit-backdrop-filter:blur(16px) saturate(1.25)}
+  .tabbar{border-radius:26px;border-color:transparent;box-shadow:0 1px 0 rgba(255,255,255,.06) inset,var(--shadow-lg);padding:8px}
+  .tabbar button{border-radius:18px;padding:8px 2px 6px}
+  .tabbar button.on{transform:translateY(-1px)}
+  .zoombar button{border-color:transparent;border-radius:12px}
+  .brand{border-color:transparent;border-radius:16px}
+  .navbar{border-color:transparent;border-radius:15px}
+  .sheet,.about{border-radius:24px}
+  .morepop{border-radius:18px;padding:7px}
+  .btn,.srow .go{border-radius:12px}
+  .fld,.search input,.remcard select{border-radius:12px}
+  .pill{height:33px;display:inline-flex;align-items:center}
+  .sheet .tabs button{padding:13px 6px}
+  .detail{border-radius:18px}
+  .sheet h4,.about h3{letter-spacing:.1px}
+  .sub,.note{line-height:1.55}
+  .sheet .body,.list,.dbody,.about{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+  .sheet .body::-webkit-scrollbar,.list::-webkit-scrollbar,.about::-webkit-scrollbar{width:6px}
+  .sheet .body::-webkit-scrollbar-thumb,.list::-webkit-scrollbar-thumb,.about::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+  .code{border-style:solid;border-width:1px}
+  .srow{padding:10px 2px}
+  .remcard{border-radius:14px}
+  .alertcard{border-radius:18px}
+  @supports not (backdrop-filter:blur(4px)){.tabbar,.zoombar button,.brand,.navbar,.morepop{background:var(--sur)}}
 </style>
 <script>
 /* OCF Fair Map is fully on-device: settings, pins, favorites and reminders
@@ -483,7 +511,7 @@ if('serviceWorker' in navigator && location.protocol==='https:'){window.addEvent
     <a href="https://www.oregoncountryfair.org/about-ocf/general-information/the-map/" target="_blank" rel="noopener">Official map page</a>
     <a href="https://www.openstreetmap.org/#map=16/44.0534/-123.3704" target="_blank" rel="noopener">Real site on OSM</a>
   </div>
-  <p class="devcredit">Application development by <b>Josh Hughes</b><br><a href="mailto:jhughesgraphics@gmail.com">jhughesgraphics@gmail.com</a></p>
+  <p class="devcredit">Build 2026.07.14 &middot; Application development by <b>Josh Hughes</b><br><a href="mailto:jhughesgraphics@gmail.com">jhughesgraphics@gmail.com</a></p>
 </div>
 <div class="about" id="welcome" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
   <h3 id="welcomeTitle">&#127803; Welcome to the Fair</h3>
@@ -761,17 +789,23 @@ svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
     [235,306],[426,249],[611,234],[796,263],[888,334],[931,426],[938,540],[910,639],[853,725],[739,789],[611,824],[469,831],[355,796],[270,739],[213,647],[192,540],[199,426],[213,341],
     /* lower loop 18-33 */
     [355,952],[540,924],[711,938],[838,988],[910,1073],[931,1201],[917,1329],[853,1428],[739,1499],[597,1542],[441,1535],[327,1485],[249,1400],[220,1272],[235,1130],[284,1016],
-    /* west connector mids 34-35, east connector mids 36-37, south spur 38 */
-    [430,880],[395,930],[722,858],[707,905],[590,1595]
+    /* seam corridors 34-37, dance pavilion spur 38 */
+    [430,880],[395,930],[722,858],[707,905],[590,1595],
+    /* upper interior cross-streets 39-46 */
+    [360,522],[505,528],[650,530],[800,538],[497,340],[500,432],[492,640],[478,738],
+    /* lower interior cross-streets 47-54 */
+    [400,1245],[540,1230],[680,1220],[810,1210],[540,1010],[540,1112],[540,1352],[505,1470],
+    /* north streets 55-56, DuCaniveaux 57-58, Wally's Way 59-60, south-central 61-62, Shady Grove 63-64, far north 65-66 */
+    [385,152],[322,88],[860,205],[905,172],[265,940],[190,925],[665,1345],[790,1350],[658,648],[700,745],[470,95],[545,60]
   ].map(PX);
   const GE=[];
   for(let k=0;k<18;k++)GE.push([k,(k+1)%18]);
   for(let k=0;k<16;k++)GE.push([18+k,18+(k+1)%16]);
-  GE.push([11,34],[34,35],[35,18]);   /* west corridor through the seam */
-  GE.push([9,36],[36,37],[37,20]);    /* east corridor through the seam */
-  GE.push([27,38]);                   /* south spur toward Dance Pavilion */
+  GE.push([11,34],[34,35],[35,18],[9,36],[36,37],[37,20],[27,38],
+    [15,39],[39,40],[40,41],[41,42],[42,6],[1,43],[43,44],[44,40],[40,45],[45,46],[46,11],
+    [31,47],[47,48],[48,49],[49,50],[50,23],[19,51],[51,52],[52,48],[48,53],[53,54],[54,28],
+    [1,55],[55,56],[3,57],[57,58],[18,59],[59,60],[49,61],[61,62],[62,24],[41,63],[63,64],[64,9],[55,65],[65,66]);   /* south spur toward Dance Pavilion */
   const ADJ=GN.map(()=>[]);GE.forEach(([a,b])=>{const w=Math.hypot(GN[a].x-GN[b].x,GN[a].y-GN[b].y);ADJ[a].push([b,w]);ADJ[b].push([a,w]);});
-  function nearestNode(p){let bi=0,bd=1e18;GN.forEach((n,i)=>{const d=(n.x-p.x)**2+(n.y-p.y)**2;if(d<bd){bd=d;bi=i;}});return bi;}
   function dijkstra(s,e){const N=GN.length,dist=Array(N).fill(1e18),prev=Array(N).fill(-1),done=Array(N).fill(false);dist[s]=0;
     for(let k=0;k<N;k++){let u=-1,ud=1e18;for(let i=0;i<N;i++)if(!done[i]&&dist[i]<ud){ud=dist[i];u=i;}
       if(u<0)break;done[u]=true;if(u===e)break;
@@ -792,8 +826,10 @@ svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
   function nodePath(prev,e){const p=[];let c=e;while(c>=0){p.unshift(c);c=prev[c];}return p;}
   function buildRoute(a,b){
     const direct=D2(a,b);
-    if(direct<70)return {pts:[a,b],len:direct*mpp()};   /* only when practically there */
-    const ea=nearestEdge(a),eb=nearestEdge(b);
+    const eb=nearestEdge(b);
+    /* direct only when practically there, or already as close as the network exit gets you (the walk-up leg) */
+    if(direct<70||direct<=Math.sqrt(eb.d)+28)return {pts:[a,b],len:direct*mpp()};
+    const ea=nearestEdge(a);
     let pts;
     if(ea.u===eb.u&&ea.v===eb.v)pts=[a,ea.q,eb.q,b];    /* same corridor segment */
     else{
@@ -819,12 +855,16 @@ svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
           +(p2.x-(p3.x-p1.x)/6).toFixed(1)+' '+(p2.y-(p3.y-p1.y)/6).toFixed(1)+' '
           +p2.x.toFixed(1)+' '+p2.y.toFixed(1);}
     return d;}
+  function densify(P,step){const out=[P[0]];
+    for(let i=1;i<P.length;i++){const d=D2(P[i-1],P[i]),n=Math.max(1,Math.round(d/step));
+      for(let k=1;k<=n;k++)out.push({x:P[i-1].x+(P[i].x-P[i-1].x)*k/n,y:P[i-1].y+(P[i].y-P[i-1].y)*k/n});}
+    return out;}
   function clearRoute(){routeG.innerHTML='';routePts=[];routeLen=0;}
   function drawRoute(){
     if(!nav||!myPos){clearRoute();return;}
     const a=ll2xy(myPos.lat,myPos.lng),b={x:nav.x,y:nav.y},r=buildRoute(a,b);
-    routePts=r.pts;routeLen=r.len;
-    const d=smoothD(r.pts);
+    routePts=densify(r.pts,20);routeLen=r.len;
+    const d=smoothD(routePts);
     routeG.innerHTML=`<path d="${d}" fill="none" stroke="#101812" stroke-opacity=".55" stroke-width="7" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
       <path d="${d}" fill="none" style="stroke:var(--accent)" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="9 7" vector-effect="non-scaling-stroke"><animate attributeName="stroke-dashoffset" from="16" to="0" dur="1.1s" repeatCount="indefinite"/></path>
       <circle cx="${b.x}" cy="${b.y}" r="6" style="fill:var(--accent)" stroke="#fff" stroke-width="2"/>`;}
@@ -842,7 +882,7 @@ svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',up);
       simT=setInterval(()=>{const sp=1.6/mpp();
         if(nav&&routePts.length>1){
           /* follow the routed line, point to point */
-          let i=1;while(i<routePts.length-1&&D2(routePts[i],simXY)<3)i++;
+          let i=1;while(i<routePts.length-1&&D2(routePts[i],simXY)<6)i++;
           const tgt=routePts[i],dx=tgt.x-simXY.x,dy=tgt.y-simXY.y,dd=Math.hypot(dx,dy)||1,st=Math.min(sp,dd);
           simXY.x+=dx/dd*st;simXY.y+=dy/dd*st;simWalk=null;
         }else{
